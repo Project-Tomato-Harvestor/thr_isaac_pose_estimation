@@ -1,0 +1,13 @@
+enable_infra1: false
+enable_infra2: false
+
+align_depth.enable: true
+
+enable_depth: true
+
+rgb_camera:
+  profile: '640x480x30'
+color_qos: "SYSTEM_DEFAULT"
+
+depth_module:
+  profile: '640x480x30'
