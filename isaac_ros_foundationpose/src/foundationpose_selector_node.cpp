@@ -122,8 +122,8 @@ public:
       "pose_estimation/pose_matrix_output", 1, std::bind(&Selector::poseResetCallback, this, _1));
 
     // Subscriber for FSM flag
-    fsm_flag_sub_ = this->create_subscription<std_msgs::msg::Int8>(
-      "/fsm_flag/pose_estimation_or_tracking", 1, std::bind(&Selector::FsmFlagCallback, this, _1));
+    selector_state_sub_ = this->create_subscription<std_msgs::msg::Int8>(
+      "/app/fp_select", 1, std::bind(&Selector::selectorStateCallback, this, _1));
   }
 
   // void PublishTF(const isaac_ros_tensor_list_interfaces::msg::TensorList::ConstSharedPtr & pose_msg, const std::string & parent_frame_id, const std::string & child_frame_id)
@@ -311,10 +311,11 @@ public:
     // PublishTF(tracking_pose_msg_, "d435_color_optical_frame", "fpe");
   }
 
-
-  void FsmFlagCallback(const std_msgs::msg::Int8::SharedPtr msg)
+  
+  void selectorStateCallback(const std_msgs::msg::Int8::SharedPtr msg)
   {
     pose_estimation_or_tracking_flag_ = msg->data;
+
     if (pose_estimation_or_tracking_flag_ == 0) {
       state_ = State::kPoseEstimation;
       RCLCPP_INFO(this->get_logger(), "[Pose estimation]");
@@ -359,7 +360,7 @@ private:
   rclcpp::Subscription<isaac_ros_tensor_list_interfaces::msg::TensorList>::SharedPtr
     pose_estimation_output_sub_;
   rclcpp::Subscription<std_msgs::msg::Int8>::SharedPtr 
-    fsm_flag_sub_;
+    selector_state_sub_;
 
   // TF broadcaster
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
