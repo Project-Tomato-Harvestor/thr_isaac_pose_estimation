@@ -20,8 +20,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <vision_msgs/msg/detection2_d.hpp>
 #include <vision_msgs/msg/detection2_d_array.hpp>
+
+#include <string>
 
 namespace nvidia
 {
@@ -41,8 +44,13 @@ public:
   explicit Detection2DToMask(const rclcpp::NodeOptions & options)
   : Node("detection2_d_to_mask", options)
   {
+    // variable
+    robot_state = "IDLE";
+
     // Create a publisher for the mono8 image
     image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("segmentation", 10);
+    // Create a publisher for the mono8 image
+    image_preview_pub_ = this->create_publisher<sensor_msgs::msg::Image>("/d435/segmentation_preview", 10);
 
     this->declare_parameter<int>("mask_width", 640);
     this->declare_parameter<int>("mask_height", 480);
@@ -56,8 +64,21 @@ public:
     detection2_d_sub_ = this->create_subscription<vision_msgs::msg::Detection2D>(
       "detection2_d", 10,
       std::bind(&Detection2DToMask::boundingBoxCallback, this, std::placeholders::_1));
+    // Subscribe robot_state
+    robot_state_sub_ = this->create_subscription<std_msgs::msg::String>(
+      "robot_state", 10,
+      std::bind(&Detection2DToMask::robotStateCallback, this, std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "Mask Height: %d, Mask Width: %d", mask_height_, mask_width_);
+  }
+
+  void robotStateCallback(const std_msgs::msg::String::SharedPtr msg)
+  {
+    robot_state = msg->data;
+    // Publish the last updated image when the state is HARVEST
+    if (robot_state == "HARVEST") {
+      image_pub_->publish(image_msg);
+    }
   }
 
   void boundingBoxCallback(const vision_msgs::msg::Detection2D::SharedPtr msg)
@@ -83,32 +104,31 @@ public:
     image_pub_->publish(image_msg);
   }
 
-  void boundingBoxArrayCallback(const vision_msgs::msg::Detection2DArray::SharedPtr msg)
-  {
-    // Find the detection bounding box with the highest confidence
-    float max_confidence = 0;
-    vision_msgs::msg::Detection2D max_confidence_detection;
-    // Iterate through the detections and find the one with the highest confidence
-    for (auto detection : msg->detections) {
-      // Iterate through all the hypotheses for this detection
-      // and find the one with the highest confidence
-      for (auto result : detection.results) {
-        if (result.hypothesis.score > max_confidence) {
-          max_confidence = result.hypothesis.score;
-          max_confidence_detection = detection;
-        }
+void boundingBoxArrayCallback(const vision_msgs::msg::Detection2DArray::SharedPtr msg)
+{
+  // Find the detection bounding box with the highest confidence
+  float max_confidence = 0;
+  vision_msgs::msg::Detection2D max_confidence_detection;
+
+  // Iterate through the detections and find the one with the highest confidence
+  for (auto detection : msg->detections) {
+    for (auto result : detection.results) {
+      if (result.hypothesis.score > max_confidence) {
+        max_confidence = result.hypothesis.score;
+        max_confidence_detection = detection;
       }
     }
+  }
 
-    // If no detection was found, return error
-    if (max_confidence == 0) {
-      RCLCPP_INFO(this->get_logger(), "No detection found with non-zero confidence");
-      return;
-    }
+  // If no detection was found, return error
+  if (max_confidence == 0) {
+    RCLCPP_INFO(this->get_logger(), "No detection found with non-zero confidence");
+    return;
+  }
 
+  if (robot_state == "PREPARE") {
     // Convert Detection2D to a binary mono8 image
     cv::Mat image = cv::Mat::zeros(mask_height_, mask_width_, CV_8UC1);
-    // Draws a rectangle filled with 255
     cv::rectangle(
       image,
       cv::Point(
@@ -119,20 +139,31 @@ public:
         max_confidence_detection.bbox.center.position.y + max_confidence_detection.bbox.size_y / 2),
       cv::Scalar(255), -1);
 
-    // Convert the OpenCV image to a ROS sensor_msgs::msg::Image and publish it
+    // Convert the OpenCV image to a ROS sensor_msgs::msg::Image and save it to image_msg_
     std_msgs::msg::Header header(msg->header);
     cv_bridge::CvImage cv_image(header, "mono8", image);
-    sensor_msgs::msg::Image image_msg;
     cv_image.toImageMsg(image_msg);
-    image_pub_->publish(image_msg);
+    image_preview_pub_->publish(image_msg);
+    // image_pub_->publish(image_msg);
   }
+
+  // // Publish the last updated image when the state is HARVEST
+  // if (robot_state == "HARVEST") {
+  //   image_pub_->publish(image_msg);
+  // }
+}
 
 private:
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_preview_pub_;
+
   rclcpp::Subscription<vision_msgs::msg::Detection2D>::SharedPtr detection2_d_sub_;
   rclcpp::Subscription<vision_msgs::msg::Detection2DArray>::SharedPtr detection2_d_array_sub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr robot_state_sub_;
   int mask_height_;
   int mask_width_;
+  std::string robot_state;
+  sensor_msgs::msg::Image image_msg;
 };
 
 }  // namespace foundationpose

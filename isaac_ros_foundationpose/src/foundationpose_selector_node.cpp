@@ -260,31 +260,31 @@ public:
 
 
   void selectionCallback(
-      const nvidia::isaac_ros::nitros::NitrosImage::ConstSharedPtr & image_msg,
-      const nvidia::isaac_ros::nitros::NitrosImage::ConstSharedPtr & depth_msg,
-      const nvidia::isaac_ros::nitros::NitrosImage::ConstSharedPtr & segmentation_msg,
-      const sensor_msgs::msg::CameraInfo::ConstSharedPtr & camera_info_msg)
+    const nvidia::isaac_ros::nitros::NitrosImage::ConstSharedPtr & image_msg,
+    const nvidia::isaac_ros::nitros::NitrosImage::ConstSharedPtr & depth_msg,
+    const nvidia::isaac_ros::nitros::NitrosImage::ConstSharedPtr & segmentation_msg,
+    const sensor_msgs::msg::CameraInfo::ConstSharedPtr & camera_info_msg)
   {
-      std::unique_lock<std::mutex> lock(mutex_);
-      // Trigger next action
-      if (state_ == State::kPoseEstimation) {
-          // Publish messages to pose estimation
-          pose_estimation_image_pub_->publish(*image_msg);
-          pose_estimation_camera_pub_->publish(*camera_info_msg);
-          pose_estimation_depth_pub_->publish(*depth_msg);
-          pose_estimation_segmenation_pub_->publish(*segmentation_msg);
-          state_ = State::kWaitingReset;
-      } else if (state_ == State::kTracking) {
-          // Publish messages to tracking
-          tracking_image_pub_->publish(*image_msg);
-          tracking_camera_pub_->publish(*camera_info_msg);
-          tracking_depth_pub_->publish(*depth_msg);
-          if (tracking_pose_msg_) {
-              tracking_pose_pub_->publish(*tracking_pose_msg_);
-          } else {
-              RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "tracking_pose_msg_ is null, skipping publish.");
-          }
-      }
+    std::unique_lock<std::mutex> lock(mutex_);
+    // Trigger next action
+    if (state_ == State::kPoseEstimation) {
+        // Publish messages to pose estimation
+        pose_estimation_image_pub_->publish(*image_msg);
+        pose_estimation_camera_pub_->publish(*camera_info_msg);
+        pose_estimation_depth_pub_->publish(*depth_msg);
+        pose_estimation_segmenation_pub_->publish(*segmentation_msg);
+        state_ = State::kWaitingReset;
+    } else if (state_ == State::kTracking) {
+        // Publish messages to tracking
+        tracking_image_pub_->publish(*image_msg);
+        tracking_camera_pub_->publish(*camera_info_msg);
+        tracking_depth_pub_->publish(*depth_msg);
+        if (tracking_pose_msg_) {
+            tracking_pose_pub_->publish(*tracking_pose_msg_);
+        } else {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "tracking_pose_msg_ is null, skipping publish.");
+        }
+    }
   }
 
 
@@ -324,7 +324,6 @@ public:
       state_ = State::kTracking;
       RCLCPP_INFO(this->get_logger(), "[Pose tracking]");
     }
-    
   }
 
 private:

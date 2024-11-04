@@ -34,16 +34,16 @@
 namespace
 {
   // Define the subscriber and control variable in an anonymous namespace
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr estimate_pose_subscription_;
-  bool estimate_pose_or_not = false;  // Default to false
+  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr estimate_pose_subscription_;
+  bool estimate_pose_or_not = true;  // Default to false
 
-  // Define the callback function for the subscriber
-  void EstimatePoseCallback(const std_msgs::msg::String::SharedPtr msg)
-  {
-    if (msg->data == "button_registration") {
-      estimate_pose_or_not = true;
-    }
-  }
+  // // Define the callback function for the subscriber
+  // void EstimatePoseCallback(const std_msgs::msg::String::SharedPtr msg)
+  // {
+  //   if (msg->data == "button_registration") {
+  //     estimate_pose_or_not = true;
+  //   }
+  // }
 } // namespace
 
 namespace nvidia
@@ -194,8 +194,8 @@ FoundationPoseNode::FoundationPoseNode(rclcpp::NodeOptions options)
   RCLCPP_DEBUG(get_logger(), "[FoundationPoseNode] Constructor");
 
   // Initialize subscriber for the "estimate_pose" topic
-  estimate_pose_subscription_ = this->create_subscription<std_msgs::msg::String>(
-    "/app/button_registration", 10, EstimatePoseCallback); // Use the callback defined in the anonymous namespace
+  // estimate_pose_subscription_ = this->create_subscription<std_msgs::msg::String>(
+  //   "/app/button_registration", 10, EstimatePoseCallback); // Use the callback defined in the anonymous namespace
 
   // Add callback function for FoundationPose Detection3D array to broadcast to ROS TF tree
   config_map_[OUTPUT_POSE_COMPONENT_KEY].callback = std::bind(
