@@ -46,6 +46,7 @@ public:
   {
     // variable
     robot_state = "IDLE";
+    ready_to_publish_ = false;
 
     // Create a publisher for the mono8 image
     image_pub_ = this->create_publisher<sensor_msgs::msg::Image>("segmentation", 10);
@@ -75,10 +76,11 @@ public:
   void robotStateCallback(const std_msgs::msg::String::SharedPtr msg)
   {
     robot_state = msg->data;
-    // Publish the last updated image when the state is HARVEST
-    if (robot_state == "HARVEST") {
-      image_pub_->publish(image_msg);
-    }
+    // if(robot_state != "PREPARE" && robot_state != "HARVEST") ready_to_publish_ = false;
+    // if(robot_state == "HARVEST" && ready_to_publish_){
+    //   // Publish the last updated image when the state is HARVEST
+    //   image_pub_->publish(image_msg);
+    // }
   }
 
   void boundingBoxCallback(const vision_msgs::msg::Detection2D::SharedPtr msg)
@@ -125,10 +127,10 @@ void boundingBoxArrayCallback(const vision_msgs::msg::Detection2DArray::SharedPt
     RCLCPP_INFO(this->get_logger(), "No detection found with non-zero confidence");
     return;
   }
-
+  cv::Mat image = cv::Mat::zeros(mask_height_, mask_width_, CV_8UC1);
   if (robot_state == "PREPARE") {
     // Convert Detection2D to a binary mono8 image
-    cv::Mat image = cv::Mat::zeros(mask_height_, mask_width_, CV_8UC1);
+    // Draws a rectangle filled with 255
     cv::rectangle(
       image,
       cv::Point(
@@ -145,12 +147,12 @@ void boundingBoxArrayCallback(const vision_msgs::msg::Detection2DArray::SharedPt
     cv_image.toImageMsg(image_msg);
     image_preview_pub_->publish(image_msg);
     // image_pub_->publish(image_msg);
+    ready_to_publish_ = true;
+  }else if(robot_state == "HARVEST" && ready_to_publish_){
+    image_pub_->publish(image_msg);
+  }else{
+    ready_to_publish_ = false;
   }
-
-  // // Publish the last updated image when the state is HARVEST
-  // if (robot_state == "HARVEST") {
-  //   image_pub_->publish(image_msg);
-  // }
 }
 
 private:
@@ -162,6 +164,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr robot_state_sub_;
   int mask_height_;
   int mask_width_;
+  bool ready_to_publish_;
   std::string robot_state;
   sensor_msgs::msg::Image image_msg;
 };

@@ -265,6 +265,7 @@ public:
     const nvidia::isaac_ros::nitros::NitrosImage::ConstSharedPtr & segmentation_msg,
     const sensor_msgs::msg::CameraInfo::ConstSharedPtr & camera_info_msg)
   {
+    // RCLCPP_INFO(this->get_logger(), "selectionCallback");
     std::unique_lock<std::mutex> lock(mutex_);
     // Trigger next action
     if (state_ == State::kPoseEstimation) {
