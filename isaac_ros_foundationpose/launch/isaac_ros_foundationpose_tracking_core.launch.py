@@ -329,7 +329,7 @@ class IsaacROSFoundationPoseTrackingLaunchFragment(IsaacROSLaunchFragment):
             ),
             'confidence_threshold': DeclareLaunchArgument(
                 'confidence_threshold',
-                default_value='0.4',
+                default_value='0.6',
                 description='Confidence threshold to filter candidate detections during NMS'
             ),
             'nms_threshold': DeclareLaunchArgument(
