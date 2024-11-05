@@ -269,22 +269,24 @@ public:
     std::unique_lock<std::mutex> lock(mutex_);
     // Trigger next action
     if (state_ == State::kPoseEstimation) {
-        // Publish messages to pose estimation
-        pose_estimation_image_pub_->publish(*image_msg);
-        pose_estimation_camera_pub_->publish(*camera_info_msg);
-        pose_estimation_depth_pub_->publish(*depth_msg);
-        pose_estimation_segmenation_pub_->publish(*segmentation_msg);
-        state_ = State::kWaitingReset;
+      RCLCPP_INFO(this->get_logger(), "[Pose estimation]");
+      // Publish messages to pose estimation
+      pose_estimation_image_pub_->publish(*image_msg);
+      pose_estimation_camera_pub_->publish(*camera_info_msg);
+      pose_estimation_depth_pub_->publish(*depth_msg);
+      pose_estimation_segmenation_pub_->publish(*segmentation_msg);
+      state_ = State::kWaitingReset;
     } else if (state_ == State::kTracking) {
-        // Publish messages to tracking
-        tracking_image_pub_->publish(*image_msg);
-        tracking_camera_pub_->publish(*camera_info_msg);
-        tracking_depth_pub_->publish(*depth_msg);
-        if (tracking_pose_msg_) {
-            tracking_pose_pub_->publish(*tracking_pose_msg_);
-        } else {
-            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "tracking_pose_msg_ is null, skipping publish.");
-        }
+      RCLCPP_INFO(this->get_logger(), "[Pose tracking]");
+      // Publish messages to tracking
+      tracking_image_pub_->publish(*image_msg);
+      tracking_camera_pub_->publish(*camera_info_msg);
+      tracking_depth_pub_->publish(*depth_msg);
+      if (tracking_pose_msg_) {
+          tracking_pose_pub_->publish(*tracking_pose_msg_);
+      } else {
+          RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000, "tracking_pose_msg_ is null, skipping publish.");
+      }
     }
   }
 
@@ -319,11 +321,9 @@ public:
 
     if (pose_estimation_or_tracking_flag_ == 0) {
       state_ = State::kPoseEstimation;
-      RCLCPP_INFO(this->get_logger(), "[Pose estimation]");
     }
     else if (pose_estimation_or_tracking_flag_ == 1) {
       state_ = State::kTracking;
-      RCLCPP_INFO(this->get_logger(), "[Pose tracking]");
     }
   }
 
