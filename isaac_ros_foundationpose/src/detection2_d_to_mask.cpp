@@ -110,59 +110,21 @@ public:
   {
     // Find the detection bounding box with the highest confidence
     float max_confidence = 0;
-
-    // Iterate through the detections and find the one with the highest confidence
-    for (auto detection : msg->detections) {
-      for (auto result : detection.results) {
-        if (result.hypothesis.score > max_confidence) {
-          max_confidence = result.hypothesis.score;
-          max_confidence_detection = detection;
-        }
-      }
-    }
-
-    if (max_confidence == 0) {
-      RCLCPP_INFO(this->get_logger(), "No detection found with non-zero confidence");
-      return;
-    }
-
-    cv::Mat image = cv::Mat::zeros(mask_height_, mask_width_, CV_8UC1);
-    // Draws a rectangle filled with 255
-    cv::rectangle(
-      image,
-      cv::Point(
-        max_confidence_detection.bbox.center.position.x - max_confidence_detection.bbox.size_x / 2,
-        max_confidence_detection.bbox.center.position.y - max_confidence_detection.bbox.size_y / 2),
-      cv::Point(
-        max_confidence_detection.bbox.center.position.x + max_confidence_detection.bbox.size_x / 2,
-        max_confidence_detection.bbox.center.position.y + max_confidence_detection.bbox.size_y / 2),
-      cv::Scalar(255), -1);
-      
-    sensor_msgs::msg::Image image_msg;
-    std_msgs::msg::Header header(msg->header);
-    cv_bridge::CvImage cv_image(header, "mono8", image);
-    cv_image.toImageMsg(image_msg);
-    image_pub_->publish(image_msg);
-    
-    // if (robot_state == "PREPARE"){
-    //   // Iterate through the detections and find the one with the highest confidence
-    //   for (auto detection : msg->detections) {
-    //     for (auto result : detection.results) {
-    //       if (result.hypothesis.score > max_confidence) {
-    //         max_confidence = result.hypothesis.score;
-    //         max_confidence_detection = detection;
-    //       }
+    /* Original */
+    // // Iterate through the detections and find the one with the highest confidence
+    // for (auto detection : msg->detections) {
+    //   for (auto result : detection.results) {
+    //     if (result.hypothesis.score > max_confidence) {
+    //       max_confidence = result.hypothesis.score;
+    //       max_confidence_detection = detection;
     //     }
-    //   }
-    //   // If no detection was found, return error
-    //   if (max_confidence == 0) {
-    //     RCLCPP_INFO(this->get_logger(), "No detection found with non-zero confidence");
-    //     return;
     //   }
     // }
 
-    // if (robot_state != "HARVEST" && robot_state != "PREPARE") return;
-      
+    // if (max_confidence == 0) {
+    //   RCLCPP_INFO(this->get_logger(), "No detection found with non-zero confidence");
+    //   return;
+    // }
 
     // cv::Mat image = cv::Mat::zeros(mask_height_, mask_width_, CV_8UC1);
     // // Draws a rectangle filled with 255
@@ -175,11 +137,52 @@ public:
     //     max_confidence_detection.bbox.center.position.x + max_confidence_detection.bbox.size_x / 2,
     //     max_confidence_detection.bbox.center.position.y + max_confidence_detection.bbox.size_y / 2),
     //   cv::Scalar(255), -1);
-
+      
+    // sensor_msgs::msg::Image image_msg;
     // std_msgs::msg::Header header(msg->header);
     // cv_bridge::CvImage cv_image(header, "mono8", image);
     // cv_image.toImageMsg(image_msg);
-    // if (robot_state == "HARVEST") image_pub_->publish(image_msg);
+    // image_pub_->publish(image_msg);
+
+    /* Modified */
+    if (robot_state != "HARVEST" && robot_state != "PREPARE") return;
+
+    if (robot_state == "PREPARE"){
+      // Iterate through the detections and find the one with the highest confidence
+      for (auto detection : msg->detections) {
+        for (auto result : detection.results) {
+          if (result.hypothesis.score > max_confidence) {
+            max_confidence = result.hypothesis.score;
+            max_confidence_detection = detection;
+          }
+        }
+      }
+      // If no detection was found, return error
+      if (max_confidence == 0) {
+        RCLCPP_INFO(this->get_logger(), "No detection found with non-zero confidence");
+        return;
+      }
+    }
+
+    if (robot_state == "HARVEST") {
+      cv::Mat image = cv::Mat::zeros(mask_height_, mask_width_, CV_8UC1);
+      // Draws a rectangle filled with 255
+      cv::rectangle(
+        image,
+        cv::Point(
+          max_confidence_detection.bbox.center.position.x - max_confidence_detection.bbox.size_x / 2,
+          max_confidence_detection.bbox.center.position.y - max_confidence_detection.bbox.size_y / 2),
+        cv::Point(
+          max_confidence_detection.bbox.center.position.x + max_confidence_detection.bbox.size_x / 2,
+          max_confidence_detection.bbox.center.position.y + max_confidence_detection.bbox.size_y / 2),
+        cv::Scalar(255), -1);
+
+      sensor_msgs::msg::Image image_msg;
+      std_msgs::msg::Header header(msg->header);
+      cv_bridge::CvImage cv_image(header, "mono8", image);
+      cv_image.toImageMsg(image_msg);
+      image_pub_->publish(image_msg);
+    }
   }     
 
 private:
